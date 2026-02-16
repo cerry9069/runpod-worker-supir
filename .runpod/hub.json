@@ -1,0 +1,11 @@
+{
+  "title": "SUPIR Image Enhancer",
+  "description": "RunPod serverless worker for SUPIR image enhancement and upscaling. Accepts image URL, returns enhanced image as base64.",
+  "type": "serverless",
+  "category": "image",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 30,
+    "env": []
+  }
+}
