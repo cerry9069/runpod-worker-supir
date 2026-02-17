@@ -1,6 +1,7 @@
 """
-RunPod Serverless Handler — SUPIR Image Enhancer
-Accepts an image URL, enhances it with SUPIR, returns base64 or URL.
+RunPod Serverless Handler — SD x4 Image Upscaler
+Uses stabilityai/stable-diffusion-x4-upscaler for 4x image enhancement.
+Accepts an image URL, upscales it, returns base64 PNG.
 """
 import os
 import runpod
@@ -11,7 +12,7 @@ from io import BytesIO
 from PIL import Image
 
 MODEL = None
-CACHE_DIR = "/cache/supir"
+CACHE_DIR = "/cache/upscaler"
 
 
 def load_model():
@@ -20,18 +21,17 @@ def load_model():
         return MODEL
 
     os.makedirs(CACHE_DIR, exist_ok=True)
-    print("[supir] Loading SUPIR model...")
+    print("[upscaler] Loading SD x4 Upscaler pipeline...")
 
-    # Using the diffusers-compatible SUPIR pipeline
     from diffusers import StableDiffusionUpscalePipeline
 
     MODEL = StableDiffusionUpscalePipeline.from_pretrained(
-        "Kijai/SUPIR_pruned",
+        "stabilityai/stable-diffusion-x4-upscaler",
         torch_dtype=torch.float16,
         cache_dir=CACHE_DIR,
     ).to("cuda")
 
-    print("[supir] Model loaded.")
+    print("[upscaler] Pipeline loaded.")
     return MODEL
 
 
@@ -47,17 +47,20 @@ def handler(event):
     if not image_url:
         return {"error": "image_url is required"}
 
-    upscale = inp.get("upscale", 2)
-
     try:
         pipe = load_model()
         img = download_image(image_url)
 
+        # SD x4 upscaler works best with images around 128x128 to 512x512
+        # It upscales to 4x the input size
+        prompt = inp.get("prompt", "high quality, detailed, sharp, realistic skin texture")
+
         result = pipe(
-            prompt="high quality, detailed, sharp, realistic skin texture",
+            prompt=prompt,
             image=img,
             num_inference_steps=inp.get("steps", 20),
             guidance_scale=inp.get("guidance_scale", 7.5),
+            noise_level=inp.get("noise_level", 20),
         ).images[0]
 
         buf = BytesIO()
