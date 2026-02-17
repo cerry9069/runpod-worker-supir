@@ -61,14 +61,16 @@ def handler(event):
             print(f"[upscaler] Resizing input from {img.width}x{img.height} to {new_w}x{new_h}")
             img = img.resize((new_w, new_h), Image.LANCZOS)
 
-        prompt = inp.get("prompt", "high quality, detailed, sharp, realistic skin texture")
+        prompt = inp.get("prompt", "")
 
+        # Conservative defaults: low guidance + low noise = faithful upscale
+        # High values cause "Van Gogh" painting artifacts
         result = pipe(
             prompt=prompt,
             image=img,
             num_inference_steps=inp.get("steps", 20),
-            guidance_scale=inp.get("guidance_scale", 7.5),
-            noise_level=inp.get("noise_level", 20),
+            guidance_scale=inp.get("guidance_scale", 0),
+            noise_level=inp.get("noise_level", 0),
         ).images[0]
 
         buf = BytesIO()
