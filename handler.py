@@ -52,7 +52,15 @@ def handler(event):
         img = download_image(image_url)
 
         # SD x4 upscaler works best with images around 128x128 to 512x512
-        # It upscales to 4x the input size
+        # It upscales to 4x the input size — auto-resize large inputs to fit VRAM
+        max_input = inp.get("max_input_size", 512)
+        if img.width > max_input or img.height > max_input:
+            ratio = min(max_input / img.width, max_input / img.height)
+            new_w = int(img.width * ratio)
+            new_h = int(img.height * ratio)
+            print(f"[upscaler] Resizing input from {img.width}x{img.height} to {new_w}x{new_h}")
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+
         prompt = inp.get("prompt", "high quality, detailed, sharp, realistic skin texture")
 
         result = pipe(
